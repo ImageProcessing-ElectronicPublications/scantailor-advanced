@@ -66,6 +66,52 @@ BOOST_AUTO_TEST_CASE(params_independent_oblique_mode_xml) {
   BOOST_CHECK(restored.obliqueMode() == MODE_AUTO);
 }
 
+BOOST_AUTO_TEST_CASE(params_oblique_mode_attribute_roundtrip_xml) {
+  const Dependencies deps;
+  const Params original(-1.25, 0.75, deps, MODE_AUTO, MODE_MANUAL);
+
+  QDomDocument doc;
+  const QDomElement el = original.toXml(doc, "deskew-params");
+  doc.appendChild(el);
+
+  BOOST_CHECK(el.hasAttribute("oblique-mode"));
+  BOOST_CHECK(el.attribute("oblique-mode") == "manual");
+
+  const Params restored(doc.documentElement());
+  BOOST_CHECK(restored.mode() == MODE_AUTO);
+  BOOST_CHECK(restored.obliqueMode() == MODE_MANUAL);
+  BOOST_CHECK_CLOSE(restored.deskewAngle(), -1.25, 1e-6);
+  BOOST_CHECK_CLOSE(restored.obliqueAngle(), 0.75, 1e-6);
+}
+
+/** Selective Apply To… merge semantics (issue #117): deskew-only must not overwrite oblique. */
+BOOST_AUTO_TEST_CASE(apply_merge_deskew_only_preserves_oblique) {
+  const Dependencies deps;
+  const Params existing(1.0, 3.0, deps, MODE_MANUAL, MODE_MANUAL);
+  const Params current(2.0, 4.0, deps, MODE_AUTO, MODE_AUTO);
+
+  const Params merged(current.deskewAngle(), existing.obliqueAngle(), deps, current.mode(), existing.obliqueMode());
+
+  BOOST_CHECK_CLOSE(merged.deskewAngle(), 2.0, 1e-6);
+  BOOST_CHECK_CLOSE(merged.obliqueAngle(), 3.0, 1e-6);
+  BOOST_CHECK(merged.mode() == MODE_AUTO);
+  BOOST_CHECK(merged.obliqueMode() == MODE_MANUAL);
+}
+
+/** Selective Apply To… merge semantics (issue #117): oblique-only must not overwrite deskew. */
+BOOST_AUTO_TEST_CASE(apply_merge_oblique_only_preserves_deskew) {
+  const Dependencies deps;
+  const Params existing(1.0, 3.0, deps, MODE_MANUAL, MODE_MANUAL);
+  const Params current(2.0, 4.0, deps, MODE_AUTO, MODE_AUTO);
+
+  const Params merged(existing.deskewAngle(), current.obliqueAngle(), deps, existing.mode(), current.obliqueMode());
+
+  BOOST_CHECK_CLOSE(merged.deskewAngle(), 1.0, 1e-6);
+  BOOST_CHECK_CLOSE(merged.obliqueAngle(), 4.0, 1e-6);
+  BOOST_CHECK(merged.mode() == MODE_MANUAL);
+  BOOST_CHECK(merged.obliqueMode() == MODE_AUTO);
+}
+
 BOOST_AUTO_TEST_CASE(params_auto_oblique_false_roundtrip_xml) {
   const Dependencies deps;
   const Params original(1.0, 0.25, deps, MODE_AUTO, MODE_MANUAL);
