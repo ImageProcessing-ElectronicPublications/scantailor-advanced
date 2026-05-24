@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileSystemModel>
+#include <QMenu>
 #include <QMessageBox>
 #include <QResource>
 #include <QScrollBar>
@@ -295,6 +296,12 @@ MainWindow::MainWindow()
   });
   connect(sortingOrderBtn, &QToolButton::clicked, this,
           [this](bool) { pageOrderingChanged(m_stages->filterAt(m_curFilter)->selectedPageOrder()); });
+  connect(pauseSortingBtn, &QToolButton::toggled, this, [this](bool) {
+    if (!isProjectLoaded()) {
+      return;
+    }
+    resetThumbSequence(currentPageOrderProvider(), ThumbnailSequence::KEEP_SELECTION);
+  });
   connect(deviationHighlightingBtn, &QToolButton::clicked, this, [this, &settings](bool checked) {
     settings.setHighlightDeviationEnabled(checked);
     m_thumbSequence->invalidateAllThumbnails();
@@ -599,6 +606,10 @@ bool MainWindow::compareFiles(const QString& fpath1, const QString& fpath2) {
 }
 
 std::shared_ptr<const PageOrderProvider> MainWindow::currentPageOrderProvider() const {
+  if (pauseSortingBtn->isChecked()) {
+    return nullptr;
+  }
+
   const int idx = sortOptions->currentIndex();
   if (idx < 0) {
     return nullptr;
@@ -622,6 +633,11 @@ void MainWindow::updateSortOptions() {
   }
 
   sortOptions->setVisible(sortOptions->count() > 0);
+
+  pauseSortingBtn->setEnabled(sortOptions->count() > 0);
+  if (sortOptions->count() == 0) {
+    pauseSortingBtn->setChecked(false);
+  }
 
   if (sortOptions->count() > 0) {
     sortOptions->setCurrentIndex(filter->selectedPageOrder());
@@ -1016,7 +1032,8 @@ void MainWindow::pageContextMenuRequested(const PageInfo& pageInfo_, const QPoin
     goToPage(pageInfo.id());
   }
 
-  QMenu menu;
+  // Parent widget helps correct multi-monitor placement (issue #75).
+  QMenu menu(thumbView);
 
   auto& iconProvider = IconProvider::getInstance();
   QAction* insBefore = menu.addAction(iconProvider.getIcon("insert-before"), tr("Insert before ..."));
@@ -1041,7 +1058,7 @@ void MainWindow::pastLastPageContextMenuRequested(const QPoint& screenPos) {
     return;
   }
 
-  QMenu menu;
+  QMenu menu(thumbView);
   menu.addAction(IconProvider::getInstance().getIcon("insert-here"), tr("Insert here ..."));
 
   if (menu.exec(screenPos)) {
@@ -2157,6 +2174,7 @@ void MainWindow::setupIcons() {
   gotoPageBtn->setIcon(iconProvider.getIcon("right-pointing"));
   selectionModeBtn->setIcon(iconProvider.getIcon("checkbox-styled"));
   thumbColumnViewBtn->setIcon(iconProvider.getIcon("column-view"));
+  pauseSortingBtn->setIcon(iconProvider.getIcon("stop"));
   sortingOrderBtn->setIcon(iconProvider.getIcon("sorting-order"));
   deviationHighlightingBtn->setIcon(iconProvider.getIcon("six-spoked-asterisk"));
   diminishThumbnailsBtn->setIcon(iconProvider.getIcon("diminishing-glass"));
