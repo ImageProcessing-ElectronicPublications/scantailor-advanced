@@ -40,7 +40,7 @@ ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
 # Generate Depends via dpkg-shlibdeps when available (more accurate)
 DEPS=""
 if command -v dpkg-shlibdeps >/dev/null 2>&1; then
-  SHLIBS_OUT=$(cd "${PKG_DIR}" && dpkg-shlibdeps -e usr/bin/scantailor -O 2>/dev/null || true)
+  SHLIBS_OUT=$(cd "${PKG_DIR}" && dpkg-shlibdeps -e usr/bin/scantailor-advanced -O 2>/dev/null || true)
   if [[ -n "$SHLIBS_OUT" ]]; then
     DEPS="${SHLIBS_OUT#shlibs:Depends=}"
   fi

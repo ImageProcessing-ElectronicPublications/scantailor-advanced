@@ -13,7 +13,7 @@
 #   ./build-windows.sh                    # uses MXE_DIR or ~/mxe or /opt/mxe
 #   ./build-windows.sh shared             # use .shared target (exe + DLLs)
 #
-# Output: build-win-static/scantailor.exe (default), or build-win-shared/ for shared (exe + DLLs)
+# Output: build-win-static/scantailor-advanced.exe (default), or build-win-shared/ for shared (exe + DLLs)
 
 set -e
 
@@ -67,16 +67,20 @@ cmake -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN_FILE}" \
 
 make -j"$(nproc)"
 
-if [[ -f scantailor.exe ]]; then
+if [[ -f scantailor-advanced.exe ]]; then
+  EXE_PATH="scantailor-advanced.exe"
+elif [[ -f release/scantailor-advanced.exe ]]; then
+  EXE_PATH="release/scantailor-advanced.exe"
+elif [[ -f scantailor.exe ]]; then
   EXE_PATH="scantailor.exe"
 elif [[ -f release/scantailor.exe ]]; then
   EXE_PATH="release/scantailor.exe"
 else
-  EXE_PATH=$(find . -name "scantailor.exe" -type f 2>/dev/null | head -1)
+  EXE_PATH=$(find . -name "scantailor-advanced.exe" -o -name "scantailor.exe" -type f 2>/dev/null | head -1)
 fi
 
 if [[ -z "$EXE_PATH" || ! -f "$EXE_PATH" ]]; then
-  echo "Error: scantailor.exe not found in $BUILD_DIR" >&2
+  echo "Error: scantailor-advanced.exe not found in $BUILD_DIR" >&2
   exit 1
 fi
 
